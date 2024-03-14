@@ -48,7 +48,7 @@ func isolateFS() error {
 		return err
 	}
 
-	err = os.Link(binPath, path.Join(dir, binPath))
+	err = os.Link(path.Join(binPath, "docker-explorer"), path.Join(dir, binPath, "docker-explorer"))
 	if err != nil {
 		return err
 	}
