@@ -2,15 +2,14 @@ package main
 
 import (
 	"archive/tar"
+	"bytes"
 	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
-	"path"
 	"path/filepath"
-	"runtime"
 	"strings"
 )
 
@@ -153,14 +152,14 @@ func DownloadLayer(layer Layer, image string, token string, dir string) error {
 		return fmt.Errorf("status code: %d", response.StatusCode)
 	}
 
-	r, w := io.Pipe()
-	_, err = io.Copy(w, response.Body)
+	buf := bytes.NewBuffer(nil)
+	_, err = io.Copy(buf, response.Body)
 	if err != nil {
 		return err
 	}
 
-	filepath := path.Join(dir, layer.Digest)
-	return ExtractTar(filepath, r)
+	filepath := filepath.Join(dir, layer.Digest)
+	return ExtractTar(filepath, buf)
 }
 
 func ExtractTar(dst string, r io.Reader) error {
