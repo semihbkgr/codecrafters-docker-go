@@ -6,7 +6,7 @@ import (
 )
 
 func TestGetToken(t *testing.T) {
-	token, err := getToken("busybox")
+	token, err := getToken("alpine")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -17,12 +17,12 @@ func TestGetToken(t *testing.T) {
 }
 
 func TestGetLayers(t *testing.T) {
-	token, err := getToken("busybox")
+	token, err := getToken("alpine")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	layers, err := getLayers("busybox", "latest", token)
+	layers, err := getLayers("alpine", "latest", token)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -33,7 +33,7 @@ func TestGetLayers(t *testing.T) {
 }
 
 func TestPullImage(t *testing.T) {
-	dir, err := PullImage("busybox", "./images")
+	dir, err := PullImage("alpine", "./images")
 	if err != nil {
 		t.Fatal(err)
 	}

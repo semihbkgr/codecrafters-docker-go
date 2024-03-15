@@ -1,14 +1,12 @@
 package main
 
 import (
-	"archive/tar"
-	"bytes"
-	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -60,7 +58,10 @@ func getLayers(image string, tag string, token string) ([]Layer, error) {
 		return nil, err
 	}
 
-	req.Header.Set("Accept", "application/vnd.oci.image.manifest.v1+json")
+	req.Header.Set("Accept", "application/vnd.docker.distribution.manifest.v2+json")
+	if strings.HasPrefix(tag, "sha256") { // layer from manifest
+		req.Header.Set("Accept", "application/vnd.oci.image.manifest.v1+json")
+	}
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 
 	response, err := http.DefaultClient.Do(req)
@@ -115,6 +116,10 @@ func PullImage(image string, dir string) (string, error) {
 	}
 
 	imgDir := filepath.Join(dir, image)
+	if err := os.MkdirAll(imgDir, 0766); err != nil && !os.IsExist(err) {
+		return "", err
+	}
+
 	for _, layer := range layers {
 		err := DownloadLayer(layer, image, token, imgDir)
 		if err != nil {
@@ -153,54 +158,26 @@ func DownloadLayer(layer Layer, image string, token string, dir string) error {
 		return fmt.Errorf("status code: %d", response.StatusCode)
 	}
 
-	buf := bytes.NewBuffer(nil)
-	_, err = io.Copy(buf, response.Body)
+	path := filepath.Join(dir, fmt.Sprintf("%s.tar", layer.Digest))
+	file, err := os.Create(path)
+	if err != nil {
+		return nil
+	}
+
+	_, err = io.Copy(file, response.Body)
 	if err != nil {
 		return err
 	}
 
-	return ExtractTar(dir, buf)
+	return ExtractTar(dir, path)
 }
 
-func ExtractTar(dst string, r io.Reader) error {
-	gzr, err := gzip.NewReader(r)
+func ExtractTar(dst string, tarfile string) error {
+	cmd := exec.Command("tar", "-xvf", tarfile, "-C", dst)
+	err := cmd.Run()
 	if err != nil {
 		return err
 	}
-	defer gzr.Close()
 
-	tr := tar.NewReader(gzr)
-
-	for {
-		header, err := tr.Next()
-		switch {
-		case err == io.EOF:
-			return nil
-		case err != nil:
-			return err
-		case header == nil:
-			continue
-		}
-
-		target := filepath.Join(dst, header.Name)
-		switch header.Typeflag {
-		case tar.TypeDir:
-			if _, err := os.Stat(target); err != nil {
-				if err := os.MkdirAll(target, 0755); err != nil {
-					return err
-				}
-			}
-		case tar.TypeReg:
-			f, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR, os.FileMode(header.Mode))
-			if err != nil {
-				return err
-			}
-
-			if _, err := io.Copy(f, tr); err != nil {
-				return err
-			}
-
-			f.Close()
-		}
-	}
+	return os.Remove(tarfile)
 }
