@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 )
 
@@ -158,8 +159,7 @@ func DownloadLayer(layer Layer, image string, token string, dir string) error {
 		return err
 	}
 
-	filepath := filepath.Join(dir, layer.Digest)
-	return ExtractTar(filepath, buf)
+	return ExtractTar(dir, buf)
 }
 
 func ExtractTar(dst string, r io.Reader) error {
