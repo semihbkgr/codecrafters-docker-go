@@ -10,18 +10,25 @@ import (
 
 // Usage: your_docker.sh run <image> <command> <arg1> <arg2> ...
 func main() {
-	command := os.Args[3]
-	args := os.Args[4:len(os.Args)]
-
-	fsDir, err := isolatedFS()
+	image := os.Args[2]
+	imgDir, err := PullImage(image, "./images")
 	if err != nil {
-		fmt.Printf("error on isolating fs: %v", err)
+		fmt.Printf("error on pulling image: %v", err)
 		os.Exit(255)
 	}
 
+	command := os.Args[3]
+	args := os.Args[4:len(os.Args)]
+
+	//fsDir, err := isolatedFS()
+	//if err != nil {
+	//	fmt.Printf("error on isolating fs: %v", err)
+	//	os.Exit(255)
+	//}
+
 	cmd := exec.Command(command, args...)
 	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Chroot:     fsDir,
+		Chroot:     imgDir,
 		Cloneflags: syscall.CLONE_NEWPID,
 	}
 	cmd.Stdin = os.Stdin

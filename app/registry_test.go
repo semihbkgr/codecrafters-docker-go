@@ -33,12 +33,12 @@ func TestGetLayers(t *testing.T) {
 }
 
 func TestPullImage(t *testing.T) {
-	err := PullImage("busybox", "./images")
+	dir, err := PullImage("busybox", "./images")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	stat, err := os.Stat("./images/busybox")
+	stat, err := os.Stat(dir)
 	if err != nil {
 		t.Fatal(err)
 	}

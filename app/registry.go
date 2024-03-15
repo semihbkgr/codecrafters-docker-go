@@ -101,28 +101,28 @@ func isRuntimePlatformManifest(manifest Manifest) bool {
 	return manifest.Platform.Architecture == runtime.GOARCH && manifest.Platform.Os == runtime.GOOS
 }
 
-func PullImage(image string, dir string) error {
+func PullImage(image string, dir string) (string, error) {
 	token, err := getToken(image)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	img, tag := ParseImageTag(image)
 
 	layers, err := getLayers(img, tag, token)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	imgDir := filepath.Join(dir, image)
 	for _, layer := range layers {
 		err := DownloadLayer(layer, image, token, imgDir)
 		if err != nil {
-			return err
+			return "", err
 		}
 	}
 
-	return nil
+	return imgDir, nil
 }
 
 func ParseImageTag(image string) (string, string) {
